@@ -1,5 +1,5 @@
 # Changelog
---
+======
 ## const.py
     * Added LIST_OBJECTS as a common source for assignement of the
       default Object list
@@ -13,10 +13,13 @@
     * Added constant MINUTE for Julian calendar claculations
     * Added constant HOUR for Julian calendar calculations
 
-__
+------
 ## chart.py
     * Changed Traditional list of objects with the general list LIST_OBJECTS
       so the asignement can happen in the *const.py*
     * Removed assignement of a default house system @ 166
     * Changed default house system to Placidus
 
+------
+## object.py
+    * Changed the traditional house offset from -5deg to 0deg
