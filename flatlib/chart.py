@@ -45,7 +45,7 @@ class Chart:
         """
         # Handle optional arguments
         hsys = kwargs.get('hsys', const.HOUSES_DEFAULT)
-        IDs = kwargs.get('IDs', const.LIST_OBJECTS_TRADITIONAL)
+        IDs = kwargs.get('IDs', const.LIST_OBJECTS)
         
         self.date = date
         self.pos = pos
@@ -166,4 +166,4 @@ class Chart:
                         '00:00',
                         self.date.utcoffset)
         srDate = ephem.nextSolarReturn(date, sun.lon)
-        return Chart(srDate, self.pos, hsys=self.hsys)
+        return Chart(srDate, self.pos)
