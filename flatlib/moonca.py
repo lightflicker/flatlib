@@ -1,14 +1,26 @@
-from . import const
-from .chart import Chart
-from .geopos import GeoPos
-from .datetime import Datetime
+from flatlib import const
+from flatlib.chart import Chart
+from flatlib.datetime import Datetime
 
-"""Calculate a minute in Julian Calendar"""
+"""
+Module to calcualate the moon ingress and 
+voc
+"""
+
+# Assign a minute in Julian Calendar
 MINUTE = const.MINUTE
+# List of house distances
 DIST = [0, 2, 3, 4, 6, 8, 9, 10]
 
+# Mean Moon motion in deg/s
+MEAN_MOTION_MOON_S = const.MEAN_MOTION_MOON / 86400
+
 def NextMoonIngress(chart):
-    """Define the sign angles"""
+    """
+    Calculates datetime of the next Moon ingress
+    """
+    #TODO Need solution for calculating ingress to Aries
+    # Define the sign angles
     angles = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330, 360]
 
     # Initate local variables
@@ -16,13 +28,12 @@ def NextMoonIngress(chart):
     angle = 0.0
     # Distance between the current Moon position and the next sign
     dist = 0.0
-    # An error between the new Moon position and the sign angle
-    a_err = 10.0
     # Intiate iteration counter for statistical purposes
     i = 0
 
     # Load the current Moon position
     moon = chart.get(const.MOON)
+    print(moon.signlon)
 
     # Find the next sign angle
     for ang in angles:
@@ -31,32 +42,44 @@ def NextMoonIngress(chart):
             dist = ang - moon.lon
             break
 
-    # Evalute a time in day before the next Moon ingress
-    # Days to the next ingress
+    # Evalute a mean time in days before the next Moon ingress
     dti = (dist / const.MEAN_MOTION_MOON)
 
-    # Add the DTI into the the current Moon position
+    # Add the 'dti' into the the current Moon position
     tme = Datetime.fromJD(chart.date.jd + dti,0)
 
     # Evaluate progressed chart
-    p_chart = Chart(tme,chart.pos)
+    p_chart = Chart(tme, chart.pos)
+    # Get Moon object
     p_moon = p_chart.get(const.MOON)
-    a_err = angle - p_moon.lon
-    # Run the loop for calculating the ingress time
-    while (abs(a_err) > 0.0001):
-        p_chart = Chart(tme,chart.pos)
-        p_moon = p_chart.get(const.MOON)
-        a_err = angle - p_moon.lon
-        scale = 100.0 * abs(a_err)
+    
+    # Calculate differential between the progressed
+    # Moon position and the angle of the next sign
+    # plus 1 secound in mean angle for the ingress
+    # time to always occur in the new sign
+    a_diff = angle + MEAN_MOTION_MOON_S * 0.01 - p_moon.lon
 
-        if a_err > 0.0:
-            tme = Datetime.fromJD(tme.jd + (MINUTE * scale),0)
-        if a_err == 0.0:
+    # Run the loop for calculating the ingress time
+    while True:
+        # Recalculate chart for the corrected time
+        p_chart = Chart(tme,chart.pos)
+        # Get Moon object
+        p_moon = p_chart.get(const.MOON)
+        # Calculate position differential
+        a_diff = angle + MEAN_MOTION_MOON_S * 0.01 - p_moon.lon
+
+        # Calculate time increment factor based
+        # on the value of the differential
+        inc_factor = 100.0 * abs(a_diff)
+
+        if p_moon.lon > (angle + MEAN_MOTION_MOON_S * 0.1):
+            tme = Datetime.fromJD(tme.jd - (MINUTE * inc_factor),0)
+        if p_moon.lon < angle:
+            tme = Datetime.fromJD(tme.jd + (MINUTE * inc_factor),0)
+        if p_moon.lon > angle and p_moon.lon < (angle + MEAN_MOTION_MOON_S * 0.1):
             break
-        if a_err < 0.0:
-            tme = Datetime.fromJD(tme.jd - (MINUTE * scale),0)
         i += 1
-    return {'Date':tme,'Error':a_err,'Iter':i}
+    return {'Date':tme, 'Error':a_diff, 'Iter':i, 'Lon':p_moon.signlon, 'Sign':p_moon.sign} 
 
 
 def isCA(chart):
