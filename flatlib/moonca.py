@@ -3,7 +3,7 @@ from flatlib.chart import Chart
 from flatlib.datetime import Datetime
 
 """
-Module to calcualate the moon ingress and 
+Module to calcualate the moon next ingress and
 voc
 """
 
@@ -15,7 +15,7 @@ DIST = [0, 2, 3, 4, 6, 8, 9, 10]
 # Mean Moon motion in deg/s
 MEAN_MOTION_MOON_S = const.MEAN_MOTION_MOON / 86400
 
-def NextMoonIngress(chart):
+def next_moon_ingress(chart):
     """
     Calculates datetime of the next Moon ingress
     """
@@ -32,14 +32,13 @@ def NextMoonIngress(chart):
     i = 0
 
     # Load the current Moon position
-    moon = chart.get(const.MOON)
-    print(moon.signlon)
+    p_moon = chart.get(const.MOON)
 
     # Find the next sign angle
     for ang in angles:
-        if moon.lon < ang:
+        if p_moon.lon < ang:
             angle = ang
-            dist = ang - moon.lon
+            dist = ang - p_moon.lon
             break
 
     # Evalute a mean time in days before the next Moon ingress
@@ -48,42 +47,39 @@ def NextMoonIngress(chart):
     # Add the 'dti' into the the current Moon position
     tme = Datetime.fromJD(chart.date.jd + dti,0)
 
-    # Evaluate progressed chart
-    p_chart = Chart(tme, chart.pos)
-    # Get Moon object
-    p_moon = p_chart.get(const.MOON)
-    
-    # Calculate differential between the progressed
-    # Moon position and the angle of the next sign
-    # plus 1 secound in mean angle for the ingress
-    # time to always occur in the new sign
-    a_diff = angle + MEAN_MOTION_MOON_S * 0.01 - p_moon.lon
-
     # Run the loop for calculating the ingress time
     while True:
         # Recalculate chart for the corrected time
         p_chart = Chart(tme,chart.pos)
         # Get Moon object
         p_moon = p_chart.get(const.MOON)
-        # Calculate position differential
-        a_diff = angle + MEAN_MOTION_MOON_S * 0.01 - p_moon.lon
+        # Correct value of the moon's longtitude if ingress
+        # to Aries
+        if angle == 360 and p_moon.sign == const.ARIES:
+            p_moon_lon = p_moon.lon + 360.0
+        else:
+            p_moon_lon = p_moon.lon
 
+        # Calculate position differential
+        a_diff = angle - p_moon_lon
         # Calculate time increment factor based
         # on the value of the differential
         inc_factor = 100.0 * abs(a_diff)
 
-        if p_moon.lon > (angle + MEAN_MOTION_MOON_S * 0.1):
+        if p_moon_lon > (angle + MEAN_MOTION_MOON_S * 0.01):
             tme = Datetime.fromJD(tme.jd - (MINUTE * inc_factor),0)
-        if p_moon.lon < angle:
+        if p_moon_lon < angle:
             tme = Datetime.fromJD(tme.jd + (MINUTE * inc_factor),0)
-        if p_moon.lon > angle and p_moon.lon < (angle + MEAN_MOTION_MOON_S * 0.1):
+        if p_moon_lon > angle and p_moon_lon < (angle + MEAN_MOTION_MOON_S * 0.01):
             break
         i += 1
-    return {'Date':tme, 'Error':a_diff, 'Iter':i, 'Lon':p_moon.signlon, 'Sign':p_moon.sign} 
+    return {'Date':tme, 'Sign':p_moon.sign} 
 
 
-def isCA(chart):
-    """Is canceling aspect present?"""
+def next_ca(chart):
+    """
+    Is canceling aspect present?
+    """
     IDate = NextMoonIngress(chart)
     p_chart = Chart(IDate['Date'],chart.pos)
     moon = chart.get(const.MOON)
