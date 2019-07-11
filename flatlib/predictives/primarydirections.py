@@ -5,12 +5,6 @@
 
     This module implements the Primary Directions
     method.
-
-    Default assumptions:
-    - only directions with the primary motion (direct)
-    - only semi-arc method
-    - in-zodiaco aspects of promissors to significators
-    - in-mundo directions uses latitude of both promissors and significators
     
 """
 
@@ -269,10 +263,13 @@ class PrimaryDirections:
         
         # Promissors
         objects = self._elements(self.SIG_OBJECTS, self.N, aspList)
+        houses = self._elements(self.SIG_HOUSES, self.N, [0])
+        angles = self._elements(self.SIG_ANGLES, self.N, [0])
         terms = self._terms()
         antiscias = self._elements(self.SIG_OBJECTS, self.A, [0])
         cantiscias = self._elements(self.SIG_OBJECTS, self.C, [0])
-        promissors = objects + terms + antiscias + cantiscias
+        promissors = objects + houses + angles + terms + \
+                     antiscias + cantiscias
 
         # Compute all
         res = []
@@ -292,8 +289,8 @@ class PrimaryDirections:
                         ])
 
         return sorted(res)
-
-
+    
+    
 # ------------------ #
 #   PD Table Class   #
 # ------------------ #
@@ -301,24 +298,24 @@ class PrimaryDirections:
 class PDTable:
     """ Represents the Primary Directions table
     for a chart.
-
+    
     """
-
+    
     def __init__(self, chart, aspList=const.MAJOR_ASPECTS):
         pd = PrimaryDirections(chart)
         self.table = pd.getList(aspList)
-
+        
     def view(self, arcmin, arcmax):
         """ Returns the directions within the
         min and max arcs.
-
+        
         """
         res = []
         for direction in self.table:
             if arcmin < direction[0] < arcmax:
                 res.append(direction)
         return res
-
+    
     def bySignificator(self, ID):
         """ Returns all directions to a significator. """
         res = []
@@ -326,7 +323,7 @@ class PDTable:
             if ID in direction[2]:
                 res.append(direction)
         return res
-
+    
     def byPromissor(self, ID):
         """ Returns all directions to a promissor. """
         res = []
